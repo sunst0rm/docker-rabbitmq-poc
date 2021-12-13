@@ -2,38 +2,38 @@
 
 DELAY=10
 
-# definicja delay_exchange
-docker exec rabbitmq rabbitmqadmin declare exchange name=delay_exchange type=direct        
+# Definition of delay_exchange
+docker exec rabbitmq rabbitmqadmin declare exchange name=delay_exchange type=direct
 
-# definicja router_exchange
-docker exec rabbitmq rabbitmqadmin declare exchange name=router_exchange type=direct 
+# Definition of router_exchange
+docker exec rabbitmq rabbitmqadmin declare exchange name=router_exchange type=direct
 
-#definicja DLX
+# Definition of DLX
 docker exec rabbitmq rabbitmqadmin declare queue name=delay_queue arguments='{"x-dead-letter-exchange":"router_exchange", "x-dead-letter-routing-key":"dead_letter_key"}'
 
-#definicja binding delay_exchange z delay_queue oraz routing_key
+# Definition of binding delay_exchange with delay_queue and routing_key
 docker exec rabbitmq rabbitmqadmin declare binding source=delay_exchange destination=delay_queue  routing_key=dead_letter_key
 
-#definicje kolejki docelowej - destination_queue
+# Definition of destination queue - destination_queue
 docker exec rabbitmq rabbitmqadmin declare queue name=destination_queue
 
-#defnicja binding miedzy router_exchange a destination_queue
+# Binding definition between router_exchange and destination_queue
 docker exec rabbitmq rabbitmqadmin declare binding source=router_exchange destination=destination_queue  routing_key=dead_letter_key
 
-# publikacja wiadomosci do delay_exchange
+# Message publication to delay_exchange
 docker exec rabbitmq rabbitmqadmin publish exchange=delay_exchange routing_key=dead_letter_key payload="first message" properties='{"expiration":"10000"}'
 docker exec rabbitmq rabbitmqadmin get queue=delay_queue
 docker exec rabbitmq rabbitmqadmin get queue=destination_queue count=20
-echo "Przerwa $DELAY sekund"
+echo "$DELAY seconds pause"
 sleep $DELAY
 docker exec rabbitmq rabbitmqadmin get queue=delay_queue
 docker exec rabbitmq rabbitmqadmin get queue=destination_queue count=20
 sleep $DELAY
-echo "Przerwa $DELAY sekund"
+echo "$DELAY seconds pause"
 docker exec rabbitmq rabbitmqadmin publish exchange=delay_exchange routing_key=dead_letter_key payload="second message" properties='{"expiration":"10000"}'
 docker exec rabbitmq rabbitmqadmin get queue=delay_queue
 docker exec rabbitmq rabbitmqadmin get queue=destination_queue count=20
 sleep $DELAY
-echo "Przerwa $DELAY sekund"
+echo "$DELAY seconds pause"
 docker exec rabbitmq rabbitmqadmin get queue=delay_queue
 docker exec rabbitmq rabbitmqadmin get queue=destination_queue count=20
